@@ -16,6 +16,7 @@ function injectDylib {
 	DYLD_INSERT_LIBRARIES=./injected.dylib ~/Desktop/Books.app/Contents/MacOS/Books
 }
 
+
 BOOKS_HOME=~/Library/Containers/com.apple.iBooksX/Data
 BOOKS_EPUB_DIR=~/Library/Containers/com.apple.BKAgentService/Data/Documents/iBooks/Books
 
@@ -48,8 +49,6 @@ do
         
         cp -R "$selected_epub" "$BOOKS_HOME/tmp"
 
-        sleep 2
-
         injectDylib
 
         fileName=$(basename "$selected_epub")
@@ -58,6 +57,14 @@ do
 
         mv $decryptedEpubPath ./decrypted_books
         rm -rf "$copiedFilePath"
+
+        # convert it to an actual epub...
+        cd "./decrypted_books/${fileName%.epub}_decrypted.epub"
+        zip -r "../${fileName}" .
+
+        # and now we clean up.
+        cd ../../
+        rm -rf "./decrypted_books/${fileName%.epub}_decrypted.epub"
 
     else
         echo "Invalid selection. Please select a number from 1 to ${#itemNames[@]}."
