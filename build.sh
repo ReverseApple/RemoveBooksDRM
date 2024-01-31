@@ -1,0 +1,1 @@
+clang -dynamiclib -o injected.dylib injected.m -arch arm64e -framework Foundation
