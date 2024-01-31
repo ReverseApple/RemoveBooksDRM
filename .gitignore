@@ -68,3 +68,5 @@ fastlane/test_output
 iOSInjectionProject/
 
 .DS_Store
+
+decrypted_books/
