@@ -121,19 +121,13 @@ NSString* make_base_epub_dir(NSString *originalName, NSString *outputDir) {
 
 void try_decrypt_epub(NSString *inputPath) {
 
-    NSArray *normalTransfer = @[@"iTunesMetadata-original.plist", @"iTunesMetadata.plist", @"mimetype", @"META-INF/container.xml"];
+    NSArray *normalTransfer = @[@"mimetype", @"META-INF/container.xml"];
+    NSArray *doNotTransfer = @[@"iTunesMetadata.plist", @"iTunesMetadata-original.plist", @"iTunesArtwork"];
 
     NSData *sinfData = get_sinf(inputPath);
 
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-
-    // NSString *inputPath = @EPUB_PATH;
-    NSLog(@"INPUT PATH: %@", inputPath);
-
     NSString *outputPath = [NSString stringWithFormat:@"%@/tmp", NSHomeDirectory()];
-
     NSString *outputEpub = make_base_epub_dir([inputPath lastPathComponent], outputPath);
-
 
     // transfer all unencrypted metadata files to the output EPUB.
     for (NSString *item in normalTransfer) {
@@ -152,24 +146,35 @@ void try_decrypt_epub(NSString *inputPath) {
         return;
     }
 
-    NSString *oebpsDirectory = [NSString stringWithFormat:@"%@/OEBPS/", inputPath];
-    NSLog(oebpsDirectory);
-    NSDirectoryEnumerator *dirEnum = [fileManager enumeratorAtPath:oebpsDirectory];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+
+    NSString *baseDirectory = [NSString stringWithFormat:@"%@/", inputPath];
+    NSLog(baseDirectory);
+    NSDirectoryEnumerator *dirEnum = [fileManager enumeratorAtPath:baseDirectory];
     NSString *file;
 
     while (file = [dirEnum nextObject]) {
 
-        NSString *fileRelRoot = [NSString stringWithFormat:@"OEBPS/%@", file];
+        if ([file hasPrefix:@"META-INF"] || [normalTransfer containsObject:file] || [doNotTransfer containsObject:file]) {
+            continue;
+        }
+
+        NSString *fileRelRoot = file;
         NSString *fileOutputPath = [NSString stringWithFormat:@"%@/%@", outputEpub, fileRelRoot];
 
-        file = [NSString stringWithFormat:@"%@%@", oebpsDirectory, file];
+        file = [NSString stringWithFormat:@"%@%@", baseDirectory, file];
+
+        // if it's a directory, skip it.
+        BOOL isDirectory;
+        [fileManager fileExistsAtPath:file isDirectory:&isDirectory];
+        if (isDirectory) {
+            continue;
+        }
 
         NSLog(@"Processing %@", file);
 
         NSString *ext = [[file pathExtension] lowercaseString];
-
         NSData *fileContents;
-
         if ([ext isEqualToString:@"ncx"] || [ext isEqualToString:@"opf"]) {
             // these file types usually aren't encrypted and can be written normally.
             fileContents = [NSData dataWithContentsOfFile:file];
