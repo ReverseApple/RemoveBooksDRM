@@ -1,8 +1,10 @@
 # RemoveBooksDRM
 Apple Books DRM Removal Proof-of-Concept
 
-## Tested Apple Books Version Info
-- Version 6.2 (6024)
+## Tested Apple Books Versions
+- Version 6.2
+  - 6024
+  - 6030
 
 ## How to Build
 - Disable SIP
