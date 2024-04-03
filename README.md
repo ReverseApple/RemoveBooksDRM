@@ -5,6 +5,8 @@ Apple Books DRM Removal Proof-of-Concept
 - Version 6.2
   - 6024
   - 6030
+- Version 6.3
+  - 6040
 
 ## How to Build
 - Disable SIP
