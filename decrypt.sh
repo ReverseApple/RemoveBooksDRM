@@ -13,7 +13,7 @@ if [[ $(defaults read /Library/Preferences/com.apple.security.libraryvalidation.
 fi
 
 function injectDylib {
-	DYLD_INSERT_LIBRARIES=./injected.dylib ~/Desktop/Books.app/Contents/MacOS/Books
+	DYLD_INSERT_LIBRARIES=./injected.dylib /System/Applications/Books.app/Contents/MacOS/Books
 }
 
 
