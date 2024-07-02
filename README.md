@@ -1,13 +1,6 @@
 # RemoveBooksDRM
 Apple Books DRM Removal Proof-of-Concept
 
-## Tested Apple Books Versions
-- Version 6.2
-  - 6024
-  - 6030
-- Version 6.3
-  - 6040
-
 ## How to Build
 - Disable SIP
 - Enable the arm64e preview ABI in your boot args.
@@ -20,6 +13,15 @@ Apple Books DRM Removal Proof-of-Concept
 sudo defaults write /Library/Preferences/com.apple.security.libraryvalidation.plist DisableLibraryValidation -bool true
 ```
 - run `decrypt.sh`
+
+## Tested Apple Books Versions
+- Version 6.2
+  - 6024
+  - 6030
+- Version 6.3
+  - 6040
+- Version 6.4
+  - 6070.12.11
 
 ## Legal Use Disclaimer
 
