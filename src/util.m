@@ -1,11 +1,18 @@
+/**
+ * ReverseApple, 2024
+ * https://fairplay.lol
+ */
+
 #include <stdio.h>
 #include <syslog.h>
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
-#import "obfuscated.h"
+#import "../obfuscated.h"
+
+#include "util.h"
 
 
-NSData* get_sinf(NSString *path) {
+NSData *get_sinf(NSString *path) {
     // Read path/META-INF/sinf.xml
     NSData *sinf_file = [NSData dataWithContentsOfFile:[NSString stringWithFormat:@"%@/META-INF/sinf.xml", path]];
 
@@ -17,18 +24,22 @@ NSData* get_sinf(NSString *path) {
     }
 
     // Find <fairplay:sData>...</fairplay:sData>
-    NSRange start = [sinf_file rangeOfData:[@"<fairplay:sData>" dataUsingEncoding:NSUTF8StringEncoding] options:0 range:NSMakeRange(0, [sinf_file length])];
-    NSRange end = [sinf_file rangeOfData:[@"</fairplay:sData>" dataUsingEncoding:NSUTF8StringEncoding] options:0 range:NSMakeRange(start.location, [sinf_file length] - start.location)];
+    NSRange start = [sinf_file rangeOfData:[@"<fairplay:sData>" dataUsingEncoding:NSUTF8StringEncoding] options:0 range:NSMakeRange(
+            0, [sinf_file length])];
+    NSRange end = [sinf_file rangeOfData:[@"</fairplay:sData>" dataUsingEncoding:NSUTF8StringEncoding] options:0 range:NSMakeRange(
+            start.location, [sinf_file length] - start.location)];
     if (start.location == NSNotFound || end.location == NSNotFound) {
         printf("Failed to find <fairplay:sData>...</fairplay:sData>\n");
         return nil;
     }
-    NSData *sdata = [NSData dataWithBytes:[sinf_file bytes] + start.location + start.length length:end.location - start.location - start.length];
+    NSData *sdata = [NSData dataWithBytes:[sinf_file bytes] + start.location + start.length length:end.location -
+                                                                                                   start.location -
+                                                                                                   start.length];
     if (sdata == nil) {
         printf("Failed to extract base64-encoded data\n");
         return nil;
     }
-    
+
     // Decode base64
     NSData *sdata_decoded = [[NSData alloc] initWithBase64EncodedData:sdata options:0];
     if (sdata_decoded == nil) {
@@ -38,7 +49,7 @@ NSData* get_sinf(NSString *path) {
     return sdata_decoded;
 }
 
-NSData* try_decrypt(NSData *sinfData, NSString *path) {
+NSData *try_decrypt(NSData *sinfData, NSString *path) {
     if (sinfData == nil) {
         printf("Failed to get sdata_decoded\n");
         return nil;
@@ -50,7 +61,7 @@ NSData* try_decrypt(NSData *sinfData, NSString *path) {
     Class cls = objc_getClass("ft9cupR7u6OrU4m1pyhB");
 
     // Call the DRM symbol...
-    NSData* result = [cls pK0gFZ9QOdm17E9p9cpP:path sinfData:sinfData refetch:&refetch error:&error];
+    NSData *result = [cls pK0gFZ9QOdm17E9p9cpP:path sinfData:sinfData refetch:&refetch error:&error];
     if (result == nil) {
         printf("Failed to decrypt: %s\n", [[error localizedDescription] UTF8String]);
         return nil;
@@ -63,7 +74,7 @@ NSData* try_decrypt(NSData *sinfData, NSString *path) {
 NSString *relativePathFromAbsolutePath(NSString *absolutePath, NSString *directoryPath) {
     NSRange range = [absolutePath rangeOfString:directoryPath];
     if (range.location == 0) {
-        return [absolutePath substringFromIndex:range.length]; 
+        return [absolutePath substringFromIndex:range.length];
     }
     return absolutePath;
 }
@@ -77,10 +88,10 @@ bool write_file(NSString *filePath, NSData *content) {
         NSLog(@"Creating dir: %@", dirPath);
 
         NSError *error = nil;
-        [fm createDirectoryAtPath:dirPath 
-            withIntermediateDirectories:YES 
-            attributes:nil
-            error:&error];
+        [fm createDirectoryAtPath:dirPath
+      withIntermediateDirectories:YES
+                       attributes:nil
+                            error:&error];
 
         if (error) {
             NSLog(@"Error creating directory: %@", error);
@@ -101,7 +112,7 @@ bool write_file(NSString *filePath, NSData *content) {
 
 }
 
-NSString* make_base_epub_dir(NSString *originalName, NSString *outputDir) {
+NSString *make_base_epub_dir(NSString *originalName, NSString *outputDir) {
     NSString *nameNoExt = [originalName stringByDeletingPathExtension];
     NSString *newName = [NSString stringWithFormat:@"%@_decrypted.epub", nameNoExt];
 
@@ -155,7 +166,8 @@ void try_decrypt_epub(NSString *inputPath) {
 
     while (file = [dirEnum nextObject]) {
 
-        if ([file hasPrefix:@"META-INF"] || [normalTransfer containsObject:file] || [doNotTransfer containsObject:file]) {
+        if ([file hasPrefix:@"META-INF"] || [normalTransfer containsObject:file] ||
+            [doNotTransfer containsObject:file]) {
             continue;
         }
 
@@ -189,7 +201,7 @@ void try_decrypt_epub(NSString *inputPath) {
 
         NSLog(@"REL: %@", fileRelRoot);
         NSLog(@"OUTPUT_PATH: %@", fileOutputPath);
-        
+
         if (!write_file(fileOutputPath, fileContents)) {
             NSLog(@"Could not write file. Skipping.");
             continue;
@@ -220,12 +232,4 @@ NSString *discoverEPUB() {
     NSLog(@"What the fuck.");
 }
 
-__attribute__((constructor))
-static void injected(int argc, const char **argv) {
-    NSLog(@"UNFAIR!");
 
-    NSString *inputEpub = discoverEPUB();
-    try_decrypt_epub(inputEpub);
-
-    exit(0);
-}
