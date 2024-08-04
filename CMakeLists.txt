@@ -13,5 +13,5 @@ else()
     return()
 endif()
 
-add_library(cure SHARED src/main.mm src/util.h src/util.m)
+add_library(cure SHARED src/main.m src/rdrm.h src/rdrm.m src/util.h)
 target_link_libraries(cure "-framework Foundation -framework CoreFoundation -framework Cocoa")

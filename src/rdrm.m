@@ -7,9 +7,9 @@
 #include <syslog.h>
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
-#import "../obfuscated.h"
 
-#include "util.h"
+#import "obfuscated.h"
+#include "rdrm.h"
 
 
 NSData *get_sinf(NSString *path) {
