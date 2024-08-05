@@ -7,5 +7,6 @@
 #pragma once
 
 
-void try_decrypt_epub(NSString *inputPath);
+BOOL try_decrypt_epub(NSString *inputPath, NSString *outputFilePath);
+
 NSString *discoverEPUB();

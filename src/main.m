@@ -23,7 +23,7 @@
 
 - (void)aboutItemClicked:(id)sender;
 
--(void)decryptAssetWithID:(NSString *)assetID savePath:(NSString *)path;
+- (void)decryptAssetWithPath:(NSString *)assetID savePath:(NSString *)path withCompletion:(void (^)(BOOL))block;
 
 @property(strong, nonatomic) NSData *bkaContainerPermit;
 @end
@@ -45,8 +45,13 @@
     NSMenu *submenu = [[NSMenu alloc] initWithTitle:@MENUBAR_TITLE];
     [rootItem setSubmenu:submenu];
 
-    NSMenuItem *decryptItem = [[NSMenuItem alloc] initWithTitle:@"Decrypt All Items" action:@selector(decryptAllItemsClicked:) keyEquivalent:@""];
-    NSMenuItem *aboutItem = [[NSMenuItem alloc] initWithTitle:@"About" action:@selector(aboutItemClicked:) keyEquivalent:@""];
+    NSMenuItem *decryptItem = [[NSMenuItem alloc] initWithTitle:@"Decrypt All Items"
+                                                         action:@selector(decryptAllItemsClicked:)
+                                                  keyEquivalent:@""];
+
+    NSMenuItem *aboutItem = [[NSMenuItem alloc] initWithTitle:@"About"
+                                                       action:@selector(aboutItemClicked:)
+                                                keyEquivalent:@""];
 
     [decryptItem setTarget:instance];
     [aboutItem setTarget:instance];
@@ -174,13 +179,24 @@
     [savePanel setPrompt:@"OK"];
     [savePanel setMessage:@"Select a location to save the decrypted item."];
 
-    [savePanel beginSheetModalForWindow:nil completionHandler: ^(NSModalResponse result) {
+    [savePanel beginSheetModalForWindow:nil completionHandler:^(NSModalResponse result) {
         if (result == NSModalResponseOK) {
-            [self decryptAssetWithID:bookAssetPath savePath:[[savePanel URL] path]];
+            [self decryptAssetWithPath:bookAssetPath savePath:[[savePanel URL] path] withCompletion:^(BOOL success){
+                if (!success){
+                    NSAlert *errModal = [[NSAlert alloc] init];
+                    [errModal setAlertStyle:NSAlertStyleCritical];
+                    [errModal setMessageText:@"Failed to decrypt this item."];
+                    [errModal setInformativeText:@"View the console for more details."];
+                    [errModal runModal];
+                } else {
+                    NSAlert *successModal = [[NSAlert alloc] init];
+                    [successModal setMessageText:@"Success"];
+                    [successModal setInformativeText:@"Content has been decrypted and saved."];
+                    [successModal runModal];
+                }
+            }];
         }
     }];
-
-//    [self decryptAssetWithID:bookAssetID savePath];
 
 }
 
@@ -223,13 +239,20 @@
     [about runModal];
 }
 
+- (void)decryptAssetWithPath:(NSString *)inputPath savePath:(NSString *)saveAs withCompletion:(void (^)(BOOL))block {
+
+    BOOL success = try_decrypt_epub(inputPath, saveAs);
+
+    block(success);
+}
+
 @end
 
 
 __attribute__((constructor))
 static void injected(int argc, const char **argv) {
     NSLog(@"UNFAIR!");
-    NSLog(@"Injection successful.");
+    NSLog(@"Injected successfully!");
 
     // This was a pain in the ass!
     [[NSNotificationCenter defaultCenter]

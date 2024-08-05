@@ -112,38 +112,39 @@ bool write_file(NSString *filePath, NSData *content) {
 
 }
 
-NSString *make_base_epub_dir(NSString *originalName, NSString *outputDir) {
-    NSString *nameNoExt = [originalName stringByDeletingPathExtension];
-    NSString *newName = [NSString stringWithFormat:@"%@_decrypted.epub", nameNoExt];
+NSError* make_base_epub_dir(NSString *outputPath) {
+//    NSString *nameNoExt = [originalName stringByDeletingPathExtension];
+//    NSString *newName = [NSString stringWithFormat:@"%@_decrypted.epub", nameNoExt];
 
     NSFileManager *fm = [NSFileManager defaultManager];
 
-    NSError *error = nil;
-    NSString *outputEpub = [NSString stringWithFormat:@"%@/%@", outputDir, newName];
-    [fm createDirectoryAtPath:outputEpub withIntermediateDirectories:NO attributes:nil error:&error];
+    NSError *err = nil;
+    [fm createDirectoryAtPath:outputPath withIntermediateDirectories:NO attributes:nil error:&err];
 
-    if (error) {
-        NSLog(@"Error creating output EPUB directory %@, %@", outputEpub, error);
-        return nil;
+    if (err) {
+        NSLog(@"Error creating output EPUB directory %@, %@", outputPath, err);
+        return err;
     }
 
-    return outputEpub;
+    return nil;
 }
 
-void try_decrypt_epub(NSString *inputPath) {
+BOOL try_decrypt_epub(NSString *inputPath, NSString* outputFilePath) {
 
     NSArray *normalTransfer = @[@"mimetype", @"META-INF/container.xml"];
     NSArray *doNotTransfer = @[@"iTunesMetadata.plist", @"iTunesMetadata-original.plist", @"iTunesArtwork"];
 
     NSData *sinfData = get_sinf(inputPath);
 
-    NSString *outputPath = [NSString stringWithFormat:@"%@/tmp", NSHomeDirectory()];
-    NSString *outputEpub = make_base_epub_dir([inputPath lastPathComponent], outputPath);
+    NSError *error = make_base_epub_dir(outputFilePath);
+    if (error){
+        return NO;
+    }
 
     // transfer all unencrypted metadata files to the output EPUB.
     for (NSString *item in normalTransfer) {
         NSString *ntip = [NSString stringWithFormat:@"%@/%@", inputPath, item];
-        NSString *ntop = [NSString stringWithFormat:@"%@/%@", outputEpub, item];
+        NSString *ntop = [NSString stringWithFormat:@"%@/%@", outputFilePath, item];
         NSData *fc = [NSData dataWithContentsOfFile:ntip];
 
         if (!write_file(ntop, fc)) {
@@ -152,15 +153,11 @@ void try_decrypt_epub(NSString *inputPath) {
         }
     }
 
-    if (outputEpub == nil) {
-        NSLog(@"Output EPUB is nil.");
-        return;
-    }
-
     NSFileManager *fileManager = [NSFileManager defaultManager];
 
     NSString *baseDirectory = [NSString stringWithFormat:@"%@/", inputPath];
-    NSLog(baseDirectory);
+    NSLog(@"Base directory: %@", baseDirectory);
+
     NSDirectoryEnumerator *dirEnum = [fileManager enumeratorAtPath:baseDirectory];
     NSString *file;
 
@@ -172,7 +169,7 @@ void try_decrypt_epub(NSString *inputPath) {
         }
 
         NSString *fileRelRoot = file;
-        NSString *fileOutputPath = [NSString stringWithFormat:@"%@/%@", outputEpub, fileRelRoot];
+        NSString *fileOutputPath = [NSString stringWithFormat:@"%@/%@", outputFilePath, fileRelRoot];
 
         file = [NSString stringWithFormat:@"%@%@", baseDirectory, file];
 
@@ -208,6 +205,8 @@ void try_decrypt_epub(NSString *inputPath) {
         }
 
     }
+
+    return YES;
 }
 
 NSString *discoverEPUB() {
