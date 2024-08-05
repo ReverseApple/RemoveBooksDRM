@@ -28,7 +28,8 @@ itemNames=()
 
 for file in "$BOOKS_EPUB_DIR"/*.epub
 do
-    itemName=$(xmllint --xpath "/plist/dict/key[text()='itemName']/following-sibling::*[1]/text()" "$file/iTunesMetadata.plist" 2>/dev/null)
+    # itemName=$(xmllint --xpath "/plist/dict/key[text()='itemName']/following-sibling::*[1]/text()" "$file/iTunesMetadata.plist" 2>/dev/null)
+    itemName="$file"
     if [[ -z "$itemName" ]]; then
         echo "Failed to extract itemName from $file"
         continue
