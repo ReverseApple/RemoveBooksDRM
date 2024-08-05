@@ -19,7 +19,7 @@
 
 - (void)handleBookOpenNotification:(NSNotification *)notification;
 
-- (void)decryptAllItemsClicked:(id)sender;
+- (void)instructionsClicked:(id)sender;
 
 - (void)aboutItemClicked:(id)sender;
 
@@ -45,8 +45,8 @@
     NSMenu *submenu = [[NSMenu alloc] initWithTitle:@MENUBAR_TITLE];
     [rootItem setSubmenu:submenu];
 
-    NSMenuItem *decryptItem = [[NSMenuItem alloc] initWithTitle:@"Decrypt All Items"
-                                                         action:@selector(decryptAllItemsClicked:)
+    NSMenuItem *decryptItem = [[NSMenuItem alloc] initWithTitle:@"Instructions"
+                                                         action:@selector(instructionsClicked:)
                                                   keyEquivalent:@""];
 
     NSMenuItem *aboutItem = [[NSMenuItem alloc] initWithTitle:@"About"
@@ -200,28 +200,15 @@
 
 }
 
-- (void)decryptAllItemsClicked:(id)sender {
-    NSLog(@"Decrypt clicked!");
+- (void)instructionsClicked:(id)sender {
+    NSLog(@"Instructions clicked!");
 
-    NSError *error = nil;
-    BOOL stalePermit;
-    NSURL *containerURL = [NSURL URLByResolvingBookmarkData:self.bkaContainerPermit
-                                                    options:NSURLBookmarkResolutionWithSecurityScope
-                                              relativeToURL:nil
-                                        bookmarkDataIsStale:&stalePermit
-                                                      error:&error];
-
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-
-    if (containerURL) {
-        if ([containerURL startAccessingSecurityScopedResource]) {
-            NSError *error;
-            NSArray *directoryContents = [fileManager
-                    contentsOfDirectoryAtPath:[containerURL path]
-                                        error:&error];
-            NSLog(@"%@", directoryContents);
-        }
-    }
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert setMessageText:@"Instructions"];
+    [alert setInformativeText:@"Open an EPUB book you'd like to decrypt. "
+                              "Once opened, a confirmation dialog will be presented.\n"
+                              "Upon confirming, you may select a location to save the decrypted EPUB file."];
+    [alert runModal];
 
 }
 
