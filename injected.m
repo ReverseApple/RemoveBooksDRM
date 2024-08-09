@@ -52,8 +52,14 @@ NSData* try_decrypt(NSData *sinfData, NSString *path) {
     // Call the DRM symbol...
     NSData* result = [cls pK0gFZ9QOdm17E9p9cpP:path sinfData:sinfData refetch:&refetch error:&error];
     if (result == nil) {
-        printf("Failed to decrypt: %s\n", [[error localizedDescription] UTF8String]);
-        return nil;
+        // Error code -42010 means there is no DRM protection to decrypt
+        if (error.code == -42010) {
+            result = [NSData dataWithContentsOfFile:path  options:0 error:nil];
+        }
+        else {
+            printf("Failed to decrypt: %s\n", [[error localizedDescription] UTF8String]);
+            return nil;
+        }
     }
     NSLog(@"Decrypted: %@", result);
 
