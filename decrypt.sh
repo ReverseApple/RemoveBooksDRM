@@ -25,14 +25,20 @@ mkdir ./decrypted_books
 
 epubFiles=()
 itemNames=()
+index=1
 
 for file in "$BOOKS_EPUB_DIR"/*.epub
 do
-    itemName=$(xmllint --xpath "/plist/dict/key[text()='itemName']/following-sibling::*[1]/text()" "$file/iTunesMetadata.plist" 2>/dev/null)
+    itemName=$(defaults read "$file/iTunesMetadata" itemName)
     if [[ -z "$itemName" ]]; then
         echo "Failed to extract itemName from $file"
         continue
     fi
+    # If there are more than 21 files, select does not list all the options
+    if [ "$index" -ge 22 ]; then
+        echo "$index) $itemName"
+    fi
+    index=$((index+1))
     epubFiles+=("$file")
     itemNames+=("$itemName")
 done
