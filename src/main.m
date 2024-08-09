@@ -17,9 +17,13 @@
 
 + (RBDRMDelegate *)sharedInstance;
 
-- (void)handleBookOpenNotification:(NSNotification *)notification;
+- (void)handleEPUBBookOpenNotification:(NSNotification *)notification;
+
+- (void)handleIBooksAssetOpenNotification:(NSNotification *)notification;
 
 - (void)instructionsClicked:(id)sender;
+
+- (void)promptDecryptWithTitle:(NSString *)bookTitle author:(NSString *)bookAuthor assetID:(NSString *)bookAssetID path:(NSString *)bookAssetPath;
 
 - (void)aboutItemClicked:(id)sender;
 
@@ -71,9 +75,15 @@
         // Subscribe notification to handler...
         NSNotificationCenter *notificationCenter = [NSNotificationCenter defaultCenter];
         [notificationCenter addObserver:sharedInstance
-                               selector:@selector(handleBookOpenNotification:)
+                               selector:@selector(handleEPUBBookOpenNotification:)
                                    name:@"BKBookReaderContentLayoutFinished"
                                  object:nil];
+
+        [notificationCenter addObserver:sharedInstance
+                               selector:@selector(handleIBooksAssetOpenNotification:)
+                                   name:@"kTHPPT_bookControllerChange"
+                                 object:nil];
+
         [sharedInstance checkBKAgentDBPermission];
 
     });
@@ -123,7 +133,6 @@
                                                                    error:&error];
 
                 if (permit) {
-
                     NSAlert *successModal = [[NSAlert alloc] init];
                     [successModal setMessageText:@"Success"];
                     [successModal setInformativeText:@"Permission acquired successfully."];
@@ -149,7 +158,29 @@
     }];
 }
 
-- (void)handleBookOpenNotification:(NSNotification *)notification {
+- (void)handleIBooksAssetOpenNotification:(NSNotification *)notification {
+    if (notification.object == nil) {
+        return;
+    }
+
+    id bookEntity = [notification.object asset];
+
+    NSString *bookTitle = [bookEntity title];
+    NSString *bookAuthor = [bookEntity author];
+    NSString *bookAssetID = [bookEntity assetID];
+
+    NSString *bookAssetPath = [[bookEntity url] absoluteString];
+    NSLog(@"%@", bookAssetPath);
+    bookAssetPath = [bookAssetPath stringByReplacingOccurrencesOfString:@"file://" withString:@""];
+    NSLog(@"%@", bookAssetPath);
+    bookAssetPath = [bookAssetPath stringByTrimmingCharactersInSet:[NSCharacterSet characterSetWithCharactersInString:@"/"]];
+    NSLog(@"%@", bookAssetPath);
+    bookAssetPath = [@"/" stringByAppendingString:bookAssetPath];
+
+    [self promptDecryptWithTitle:bookTitle author:bookAuthor assetID:bookAssetID path:bookAssetPath];
+}
+
+- (void)handleEPUBBookOpenNotification:(NSNotification *)notification {
 
     id layoutController = notification.object;
     id bookEntity = [layoutController safeSwiftValueForKey:@"bookEntity"];
@@ -158,8 +189,13 @@
     NSString *bookAuthor = [bookEntity safeSwiftValueForKey:@"author"];
     NSString *bookAssetID = [bookEntity safeSwiftValueForKey:@"assetID"];
     NSString *bookAssetPath = [bookEntity safeSwiftValueForKey:@"path"];
-    NSString *bookAssetExtension = [bookAssetPath pathExtension];
 
+    [self promptDecryptWithTitle:bookTitle author:bookAuthor assetID:bookAssetID path:bookAssetPath];
+}
+
+- (void)promptDecryptWithTitle:(NSString *)bookTitle author:(NSString *)bookAuthor assetID:(NSString *)bookAssetID path:(NSString *)bookAssetPath {
+
+    NSString *bookAssetExtension = [bookAssetPath pathExtension];
     // Present a confirmation alert.
     NSAlert *confirmation = [[NSAlert alloc] init];
     NSString *message = [NSString stringWithFormat:@"Do you want to decrypt %@ by %@?", bookTitle, bookAuthor];
@@ -181,8 +217,8 @@
 
     [savePanel beginSheetModalForWindow:nil completionHandler:^(NSModalResponse result) {
         if (result == NSModalResponseOK) {
-            [self decryptAssetWithPath:bookAssetPath savePath:[[savePanel URL] path] withCompletion:^(BOOL success){
-                if (!success){
+            [self decryptAssetWithPath:bookAssetPath savePath:[[savePanel URL] path] withCompletion:^(BOOL success) {
+                if (!success) {
                     NSAlert *errModal = [[NSAlert alloc] init];
                     [errModal setAlertStyle:NSAlertStyleCritical];
                     [errModal setMessageText:@"Failed to decrypt this item."];
@@ -197,7 +233,6 @@
             }];
         }
     }];
-
 }
 
 - (void)instructionsClicked:(id)sender {
