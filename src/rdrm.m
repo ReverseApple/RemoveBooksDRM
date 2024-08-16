@@ -1,7 +1,3 @@
-/**
- * ReverseApple, 2024
- * https://fairplay.lol
- */
 
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
@@ -24,8 +20,10 @@ NSData *get_sinf(NSString *path) {
     // Find <fairplay:sData>...</fairplay:sData>
     NSRange start = [sinf_file rangeOfData:[@"<fairplay:sData>" dataUsingEncoding:NSUTF8StringEncoding] options:0 range:NSMakeRange(
             0, [sinf_file length])];
+
     NSRange end = [sinf_file rangeOfData:[@"</fairplay:sData>" dataUsingEncoding:NSUTF8StringEncoding] options:0 range:NSMakeRange(
             start.location, [sinf_file length] - start.location)];
+
     if (start.location == NSNotFound || end.location == NSNotFound) {
         printf("Failed to find <fairplay:sData>...</fairplay:sData>\n");
         return nil;
@@ -110,10 +108,7 @@ bool write_file(NSString *filePath, NSData *content) {
 
 }
 
-NSError* make_base_epub_dir(NSString *outputPath) {
-//    NSString *nameNoExt = [originalName stringByDeletingPathExtension];
-//    NSString *newName = [NSString stringWithFormat:@"%@_decrypted.epub", nameNoExt];
-
+NSError* make_base_dir(NSString *outputPath) {
     NSFileManager *fm = [NSFileManager defaultManager];
 
     NSError *err = nil;
@@ -134,7 +129,7 @@ BOOL try_decrypt_epub(NSString *inputPath, NSString* outputFilePath) {
 
     NSData *sinfData = get_sinf(inputPath);
 
-    NSError *error = make_base_epub_dir(outputFilePath);
+    NSError *error = make_base_dir(outputFilePath);
     if (error){
         return NO;
     }

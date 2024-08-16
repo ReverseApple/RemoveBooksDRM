@@ -1,8 +1,3 @@
-/**
- * ReverseApple, 2024
- * https://fairplay.lol
- */
-
 
 #pragma once
 

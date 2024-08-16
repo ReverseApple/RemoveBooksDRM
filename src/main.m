@@ -1,13 +1,9 @@
-/**
- * ReverseApple, 2024
- * https://fairplay.lol
- */
 
 #import <Foundation/Foundation.h>
 #import <Cocoa/Cocoa.h>
 
-#include "rdrm.h"
 #import "util.h"
+#import "drm.h"
 
 #define MENUBAR_TITLE "RemoveBooksDRM"
 
@@ -181,7 +177,6 @@
 }
 
 - (void)handleEPUBBookOpenNotification:(NSNotification *)notification {
-
     id layoutController = notification.object;
     id bookEntity = [layoutController safeSwiftValueForKey:@"bookEntity"];
 
@@ -212,6 +207,7 @@
     // Allow the user to select a place to save the item.
     NSSavePanel *savePanel = [NSSavePanel savePanel];
     [savePanel setNameFieldStringValue:[NSString stringWithFormat:@"%@.%@", bookTitle, bookAssetExtension]];
+    [savePanel setCanCreateDirectories:YES];
     [savePanel setPrompt:@"OK"];
     [savePanel setMessage:@"Select a location to save the decrypted item."];
 
@@ -256,16 +252,18 @@
                               "Bypass: @AngeloD2022\n"
                               "Implementation: @AngeloD2022, @JJTech0130\n\n"
                               "ReverseApple, 2024\n"
-                              "Released under the AGPL"];
+                              "Released under the AGPL\n\n"
+                              "This project includes code from the ZipArchive project, which is licensed under MIT."];
 
     [about runModal];
 }
 
 - (void)decryptAssetWithPath:(NSString *)inputPath savePath:(NSString *)saveAs withCompletion:(void (^)(BOOL))block {
 
-    BOOL success = try_decrypt_epub(inputPath, saveAs);
+//    BOOL success = try_decrypt_epub(inputPath, saveAs);
 
-    block(success);
+    BookExporter *exporter = [BookExporter exporterWithBookPath:inputPath];
+    [exporter exportToPath:saveAs];
 }
 
 @end
