@@ -3,7 +3,7 @@
 #import "external.h"
 
 #import <objc/runtime.h>
-#import <SSZipArchive/SSZipArchive.h>
+#import <Foundation/Foundation.h>
 
 NSData *parse_sinf(NSString *path) {
     // Read sinf.xml
@@ -212,13 +212,37 @@ BOOL write_file(NSString *filePath, NSData *content) {
     return false;
 }
 
-- (BOOL)exportEPUBToPath:(NSString*)path {
+- (NSString*)title {
+    if (self.metadata != nil) {
+        return self.metadata[@"itemName"];
+    }
+
+    return nil;
+}
+
+- (BOOL)createEPUBForTmp:(NSString*)tmpDir {
+    NSString *outputPath = [NSString stringWithFormat:@"../%@.epub", [self title]];
+    NSMutableArray *arguments = [@[@"-r", outputPath, @"."] mutableCopy];
+
+    NSTask *task = [[NSTask alloc] init];
+    task.launchPath = @"/usr/bin/zip";
+    task.arguments = arguments;
+    task.currentDirectoryURL = [NSURL fileURLWithPath:tmpDir];
+
+    [task launch];
+    [task waitUntilExit];
+
+    return task.terminationStatus == 0;
+}
+
+- (BOOL)exportEPUBToPath:(NSString*)exportDirectory {
+    NSArray *doNotDecryptExtensions = @[@"ncx", @"opf"];
     BOOL hasDRM = [self isDRMProtected];
 
     NSLog(@"%@", self.internalFiles);
-    NSString *tmpPath = [NSString stringWithFormat:@"%@_", path];
+    NSString *tmpPath = [NSString stringWithFormat:@"%@/tmp_%@", exportDirectory, [self title]];
 
-    NSError* error = make_base_dir(path);
+    NSError* error = make_base_dir(tmpPath);
     if (error != nil) {
         return NO;
     }
@@ -234,7 +258,7 @@ BOOL write_file(NSString *filePath, NSData *content) {
             continue;
 
         NSData *content;
-        if (hasDRM && ![_omitFromDecryption containsObject:file]) {
+        if (hasDRM && ![_omitFromDecryption containsObject:file] && ![doNotDecryptExtensions containsObject:[file pathExtension]]) {
             content = try_decrypt(self.sinfData, absoluteSrcPath);
         } else {
             content = [NSData dataWithContentsOfFile:absoluteSrcPath];
@@ -247,7 +271,16 @@ BOOL write_file(NSString *filePath, NSData *content) {
     }
 
     NSLog(@"OUTPATHS: %@", outPaths);
-    BOOL success = [SSZipArchive createZipFileAtPath:path withFilesAtPaths:outPaths];
+
+    BOOL success = [self createEPUBForTmp:tmpPath];
+    if (success)
+        NSLog(@"Created zip successfully!");
+    else
+        NSLog(@"Failed to create zip");
+
+    NSLog(@"Doing cleanup...");
+
+    [[NSFileManager defaultManager] removeItemAtPath:tmpPath error:nil];
 
     return success;
 }

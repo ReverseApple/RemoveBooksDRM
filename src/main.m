@@ -26,6 +26,7 @@
 - (void)decryptAssetWithPath:(NSString *)assetID savePath:(NSString *)path withCompletion:(void (^)(BOOL))block;
 
 @property(strong, nonatomic) NSData *bkaContainerPermit;
+@property(strong, nonatomic) NSData *decryptLocationPermit;
 @end
 
 @implementation RBDRMDelegate
@@ -191,6 +192,7 @@
 - (void)promptDecryptWithTitle:(NSString *)bookTitle author:(NSString *)bookAuthor assetID:(NSString *)bookAssetID path:(NSString *)bookAssetPath {
 
     NSString *bookAssetExtension = [bookAssetPath pathExtension];
+
     // Present a confirmation alert.
     NSAlert *confirmation = [[NSAlert alloc] init];
     NSString *message = [NSString stringWithFormat:@"Do you want to decrypt %@ by %@?", bookTitle, bookAuthor];
@@ -205,15 +207,28 @@
     }
 
     // Allow the user to select a place to save the item.
-    NSSavePanel *savePanel = [NSSavePanel savePanel];
-    [savePanel setNameFieldStringValue:[NSString stringWithFormat:@"%@.%@", bookTitle, bookAssetExtension]];
-    [savePanel setCanCreateDirectories:YES];
-    [savePanel setPrompt:@"OK"];
-    [savePanel setMessage:@"Select a location to save the decrypted item."];
+    NSOpenPanel *openPanel = [NSOpenPanel openPanel];
+//    [openPanel setNameFieldStringValue:[NSString stringWithFormat:@"%@.%@", bookTitle, bookAssetExtension]];
+    [openPanel setCanCreateDirectories:YES];
+    [openPanel setCanChooseDirectories:YES];
+    [openPanel setPrompt:@"OK"];
+    [openPanel setMessage:@"Select a folder to save the decrypted item."];
 
-    [savePanel beginSheetModalForWindow:nil completionHandler:^(NSModalResponse result) {
+    [openPanel beginSheetModalForWindow:nil completionHandler:^(NSModalResponse result) {
+        NSURL *selection = [openPanel URL];
+        NSError *error;
+        NSData *permit = [selection bookmarkDataWithOptions:NSURLBookmarkCreationWithSecurityScope
+                                  includingResourceValuesForKeys:nil
+                                                   relativeToURL:nil
+                                                           error:&error];
+
+        if (permit) {
+            self.decryptLocationPermit = permit;
+        }
+
         if (result == NSModalResponseOK) {
-            [self decryptAssetWithPath:bookAssetPath savePath:[[savePanel URL] path] withCompletion:^(BOOL success) {
+            [self decryptAssetWithPath:bookAssetPath savePath:[[openPanel URL] path] withCompletion:^(BOOL success) {
+
                 if (!success) {
                     NSAlert *errModal = [[NSAlert alloc] init];
                     [errModal setAlertStyle:NSAlertStyleCritical];
@@ -252,8 +267,7 @@
                               "Bypass: @AngeloD2022\n"
                               "Implementation: @AngeloD2022, @JJTech0130\n\n"
                               "ReverseApple, 2024\n"
-                              "Released under the AGPL\n\n"
-                              "This project includes code from the ZipArchive project, which is licensed under MIT."];
+                              "Released under the AGPL"];
 
     [about runModal];
 }
