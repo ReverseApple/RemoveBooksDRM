@@ -22,5 +22,4 @@ add_library(cure SHARED
         src/util.h
 )
 
-# Define the HAVE_WZAES macro to stop giving an undefined symbol error from SSZipArchive
 target_link_libraries(cure PRIVATE "-framework Foundation -framework CoreFoundation -framework Cocoa -framework Security")
