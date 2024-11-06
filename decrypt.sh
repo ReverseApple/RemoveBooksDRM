@@ -13,64 +13,8 @@ if [[ $(defaults read /Library/Preferences/com.apple.security.libraryvalidation.
 fi
 
 function injectDylib {
-	DYLD_INSERT_LIBRARIES=./injected.dylib /System/Applications/Books.app/Contents/MacOS/Books
+  SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+	DYLD_INSERT_LIBRARIES="${SCRIPT_DIR}/antidote.dylib" /System/Applications/Books.app/Contents/MacOS/Books
 }
 
-
-BOOKS_HOME=~/Library/Containers/com.apple.iBooksX/Data
-BOOKS_EPUB_DIR=~/Library/Containers/com.apple.BKAgentService/Data/Documents/iBooks/Books
-
-mkdir $BOOKS_HOME/tmp
-mkdir ./decrypted_books
-
-epubFiles=()
-itemNames=()
-
-for file in "$BOOKS_EPUB_DIR"/*.epub
-do
-    # itemName=$(xmllint --xpath "/plist/dict/key[text()='itemName']/following-sibling::*[1]/text()" "$file/iTunesMetadata.plist" 2>/dev/null)
-    itemName="$file"
-    if [[ -z "$itemName" ]]; then
-        echo "Failed to extract itemName from $file"
-        continue
-    fi
-    epubFiles+=("$file")
-    itemNames+=("$itemName")
-done
-
-
-select bookSel in "${itemNames[@]}";
-do
-    # Validate the user's input
-    if [[ "$REPLY" =~ ^[0-9]+$ ]] && [ "$REPLY" -ge 1 ] && [ "$REPLY" -le ${#itemNames[@]} ]; then
-
-        selected_epub="${epubFiles[REPLY]}"
-
-        open "$BOOKS_HOME/tmp"
-        
-        cp -R "$selected_epub" "$BOOKS_HOME/tmp"
-
-        injectDylib
-
-        fileName=$(basename "$selected_epub")
-        copiedFilePath="$BOOKS_HOME/tmp/$fileName"
-        decryptedEpubPath="${copiedFilePath%.epub}_decrypted.epub"
-
-        mv $decryptedEpubPath ./decrypted_books
-        rm -rf "$copiedFilePath"
-
-        # convert it to an actual epub...
-        cd "./decrypted_books/${fileName%.epub}_decrypted.epub"
-        zip -r "../${fileName}" .
-
-        # and now we clean up.
-        cd ../../
-        rm -rf "./decrypted_books/${fileName%.epub}_decrypted.epub"
-
-    else
-        echo "Invalid selection. Please select a number from 1 to ${#itemNames[@]}."
-    fi
-    break
-done
-
-
+injectDylib
