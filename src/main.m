@@ -174,7 +174,13 @@
     NSLog(@"%@", bookAssetPath);
     bookAssetPath = [@"/" stringByAppendingString:bookAssetPath];
 
-    [self promptDecryptWithTitle:bookTitle author:bookAuthor assetID:bookAssetID path:bookAssetPath];
+    NSAlert *alert = [[NSAlert alloc] init];
+    [alert setAlertStyle:NSAlertStyleCritical];
+    [alert setMessageText:@"Cannot Export!"];
+    [alert setInformativeText:@"iBooks files are not supported yet, but will be in a future release."];
+    [alert runModal];
+
+    //[self promptDecryptWithTitle:bookTitle author:bookAuthor assetID:bookAssetID path:bookAssetPath];
 }
 
 - (void)handleEPUBBookOpenNotification:(NSNotification *)notification {
