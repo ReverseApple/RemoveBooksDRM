@@ -239,7 +239,14 @@
                     NSAlert *successModal = [[NSAlert alloc] init];
                     [successModal setMessageText:@"Success"];
                     [successModal setInformativeText:@"Content has been decrypted and saved."];
-                    [successModal runModal];
+                    [successModal addButtonWithTitle:@"OK"];
+                    [successModal addButtonWithTitle:@"Open directory"];
+                    NSModalResponse successResponse = [successModal runModal];
+
+                    if (successResponse == NSAlertSecondButtonReturn) {
+                        NSLog(@"Should've opened.");
+                        [[NSWorkspace sharedWorkspace] openURL:selection];
+                    }
                 }
             }];
         }
@@ -273,11 +280,14 @@
 }
 
 - (void)decryptAssetWithPath:(NSString *)inputPath savePath:(NSString *)saveAs withCompletion:(void (^)(BOOL))block {
+    dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+        BookExporter *exporter = [BookExporter exporterWithBookPath:inputPath];
+        BOOL success = [exporter exportToPath:saveAs];
 
-//    BOOL success = try_decrypt_epub(inputPath, saveAs);
-
-    BookExporter *exporter = [BookExporter exporterWithBookPath:inputPath];
-    [exporter exportToPath:saveAs];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            block(success);
+        });
+    });
 }
 
 @end
