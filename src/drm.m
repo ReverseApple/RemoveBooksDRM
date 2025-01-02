@@ -5,6 +5,12 @@
 #import <objc/runtime.h>
 #import <Foundation/Foundation.h>
 
+// These imports only exist to satisfy the shockingly bad Objective-C linter in CLion;
+//  they are otherwise unnecessary.
+#import <Foundation/NSPredicate.h>
+#import <Foundation/NSTask.h>
+
+
 NSData *parse_sinf(NSString *path) {
     // Read sinf.xml
     NSData *sinf_file = [NSData dataWithContentsOfFile:path];
@@ -126,6 +132,22 @@ BOOL write_file(NSString *filePath, NSData *content) {
 }
 
 
+NSArray *match_files(NSString *directoryPath, NSString *globPattern) {
+    NSFileManager *fm = [NSFileManager defaultManager];
+
+    NSArray *files = [fm contentsOfDirectoryAtPath:directoryPath error:nil];
+    if (!files) {
+        NSLog(@"Failed to get files in directory %@", directoryPath);
+        return @[];
+    }
+
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"SELF LIKE %@", globPattern];
+    NSArray *matchingFiles = [files filteredArrayUsingPredicate:predicate];
+
+    return matchingFiles;
+}
+
+
 @interface BookExporter ()
 
 @property(nonatomic, strong, readwrite) NSString *bookPackagePath;
@@ -149,10 +171,16 @@ BOOL write_file(NSString *filePath, NSData *content) {
         instance.omitFromExport = @[
                 @"iTunesMetadata.plist",
                 @"iTunesMetadata-original.plist",
-                @"iTunesArtwork"
+                @"iTunesArtwork",
+                @"META-INF/encryption.xml",
+                @"META-INF/signatures.xml",
+                @"META-INF/sinf.xml",
         ];
 
-        instance.omitFromDecryption = @[@"mimetype", @"META-INF/container.xml"];
+        instance.omitFromDecryption = @[
+                @"mimetype",
+                @"META-INF/container.xml"
+        ];
 
         instance.bookPackagePath = path;
         instance.internalFiles = [NSMutableArray array];
@@ -201,7 +229,6 @@ BOOL write_file(NSString *filePath, NSData *content) {
 }
 
 - (BOOL)isDRMProtected {
-
     if (self.metadata != nil) {
         NSString *assetFlavor = self.metadata[@"asset-info"][@"flavor"];
         if (assetFlavor != nil) {
