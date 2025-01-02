@@ -6,6 +6,7 @@
 #import "drm.h"
 
 #define MENUBAR_TITLE "RemoveBooksDRM"
+#define VERSION "2.0.1"
 
 
 @interface RBDRMDelegate : NSObject
@@ -276,7 +277,7 @@
     NSAlert *about = [[NSAlert alloc] init];
 
     [about setMessageText:@"RemoveBooksDRM"];
-    [about setInformativeText:@"Version 2.0.0\n\n"
+    [about setInformativeText:@"Version " VERSION "\n\n"
                               "Bypass: @AngeloD2022\n"
                               "Implementation: @AngeloD2022, @JJTech0130\n\n"
                               "ReverseApple, 2024\n"
