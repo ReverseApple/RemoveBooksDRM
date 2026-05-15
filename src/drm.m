@@ -239,16 +239,83 @@ NSArray *match_files(NSString *directoryPath, NSString *globPattern) {
     return false;
 }
 
-- (NSString*)title {
+- (NSString*)bookTitle {
     if (self.metadata != nil) {
         return self.metadata[@"itemName"];
     }
-
     return nil;
 }
 
+-(NSString*)bookId {
+    if (self.metadata != nil) {
+        return self.metadata[@"itemId"];
+    }
+    return nil;
+}
+
+-(NSString*)sanitizedTitle {
+    // disclaimer: this code seems kind of rough, but it should do.
+
+    NSString *title = [self bookTitle];
+    NSString *bookId = [self bookId];
+
+    if (title == nil || [title length] == 0) {
+        goto fallback;
+    }
+
+    // replace invalid title chars with underscores
+    NSCharacterSet *invalidCharacters =
+        [NSCharacterSet characterSetWithCharactersInString:@"/\\?%*|\"<>:"];
+    NSString *sanitized =
+        [[title componentsSeparatedByCharactersInSet:invalidCharacters]
+            componentsJoinedByString:@"_"];
+
+    // remove duplicated whitespace
+    NSMutableCharacterSet *whitespace =
+        [[NSCharacterSet whitespaceAndNewlineCharacterSet] mutableCopy];
+    [whitespace addCharactersInString:  // apparently `whitespaceAndNewlineCharacterSet` doesn't cover all of them
+        @"\u00A0\u1680\u2000\u2001\u2002\u2003\u2004\u2005"
+        @"\u2006\u2007\u2008\u2009\u200A\u200B\u202F\u205F"
+        @"\u3000\uFEFF"];
+    NSArray *words =
+        [sanitized componentsSeparatedByCharactersInSet:whitespace];
+    NSPredicate *nonEmptyPredicate =
+        [NSPredicate predicateWithBlock:^BOOL(NSString *word, NSDictionary *bindings) {
+            return [word length] > 0;
+        }];
+    sanitized =
+        [[words filteredArrayUsingPredicate:nonEmptyPredicate]
+            componentsJoinedByString:@" "];
+    sanitized =
+        [[sanitized componentsSeparatedByString:@"_ "]
+            componentsJoinedByString:@"_"];
+
+    sanitized =
+        [sanitized stringByTrimmingCharactersInSet:
+            [NSCharacterSet characterSetWithCharactersInString:@". "]];
+
+    if ([sanitized length] == 0) {
+        goto fallback;
+    }
+
+    NSUInteger maxBaseNameLength = 240;
+    if ([sanitized length] > maxBaseNameLength) {
+        sanitized =
+            [[sanitized substringToIndex:maxBaseNameLength]
+                stringByTrimmingCharactersInSet:whitespace];
+    }
+
+    return sanitized;
+
+    fallback:
+    if (bookId != nil) {
+        return bookId;
+    }
+    return @"Untitled";
+}
+
 - (BOOL)createEPUBForTmp:(NSString*)tmpDir {
-    NSString *outputPath = [NSString stringWithFormat:@"../%@.epub", [self title]];
+    NSString *outputPath = [NSString stringWithFormat:@"../%@.epub", [self sanitizedTitle]];
     NSMutableArray *arguments = [@[@"-r", outputPath, @"."] mutableCopy];
 
     NSTask *task = [[NSTask alloc] init];
@@ -267,7 +334,7 @@ NSArray *match_files(NSString *directoryPath, NSString *globPattern) {
     BOOL hasDRM = [self isDRMProtected];
 
     NSLog(@"%@", self.internalFiles);
-    NSString *tmpPath = [NSString stringWithFormat:@"%@/tmp_%@", exportDirectory, [self title]];
+    NSString *tmpPath = [NSString stringWithFormat:@"%@/tmp_%@", exportDirectory, [self sanitizedTitle]];
 
     NSError* error = make_base_dir(tmpPath);
     if (error != nil) {
@@ -322,7 +389,6 @@ NSArray *match_files(NSString *directoryPath, NSString *globPattern) {
 }
 
 - (BOOL)exportToPath:(NSString *)path {
-
     if (self.format == BookFormatEPUB) {
         return [self exportEPUBToPath:path];
     } else {
