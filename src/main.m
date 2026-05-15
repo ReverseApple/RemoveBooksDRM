@@ -6,7 +6,7 @@
 #import "drm.h"
 
 #define MENUBAR_TITLE "RemoveBooksDRM"
-#define VERSION "2.0.1"
+#define VERSION "2.0.2"
 
 
 @interface RBDRMDelegate : NSObject
@@ -280,7 +280,7 @@
     [about setInformativeText:@"Version " VERSION "\n\n"
                               "Bypass: @AngeloD2022\n"
                               "Implementation: @AngeloD2022, @JJTech0130\n\n"
-                              "ReverseApple, 2024\n"
+                              "ReverseApple, 2026\n"
                               "Released under the AGPL"];
 
     [about runModal];
